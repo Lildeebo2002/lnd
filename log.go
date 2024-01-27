@@ -42,6 +42,7 @@ import (
 	"github.com/lightningnetwork/lnd/netann"
 	"github.com/lightningnetwork/lnd/peer"
 	"github.com/lightningnetwork/lnd/peernotifier"
+	"github.com/lightningnetwork/lnd/protofsm"
 	"github.com/lightningnetwork/lnd/routing"
 	"github.com/lightningnetwork/lnd/rpcperms"
 	"github.com/lightningnetwork/lnd/signal"
@@ -183,6 +184,7 @@ func SetupLoggers(root *build.RotatingLogWriter, interceptor signal.Interceptor)
 	AddSubLogger(root, peersrpc.Subsystem, interceptor, peersrpc.UseLogger)
 	AddSubLogger(root, graph.Subsystem, interceptor, graph.UseLogger)
 	AddSubLogger(root, lncfg.Subsystem, interceptor, lncfg.UseLogger)
+	AddSubLogger(root, protofsm.Subsystem, interceptor, protofsm.UseLogger)
 }
 
 // AddSubLogger is a helper method to conveniently create and register the
