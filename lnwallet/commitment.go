@@ -225,9 +225,8 @@ func (w *WitnessScriptDesc) WitnessScriptForPath(_ input.ScriptPath,
 // party learns of the preimage to the revocation hash, then they can claim all
 // the settled funds in the channel, plus the unsettled funds.
 func CommitScriptToSelf(chanType channeldb.ChannelType, initiator bool,
-	selfKey, revokeKey *btcec.PublicKey, csvDelay, leaseExpiry uint32,
-) (
-	input.ScriptDescriptor, error) {
+	selfKey, revokeKey *btcec.PublicKey, csvDelay,
+	leaseExpiry uint32) (input.ScriptDescriptor, error) {
 
 	switch {
 	// For taproot scripts, we'll need to make a slightly modified script
@@ -237,7 +236,7 @@ func CommitScriptToSelf(chanType channeldb.ChannelType, initiator bool,
 	// Our "redeem" script here is just the taproot witness program.
 	case chanType.IsTaproot():
 		return input.NewLocalCommitScriptTree(
-			csvDelay, selfKey, revokeKey,
+			csvDelay, selfKey, revokeKey, input.NoneTapLeaf(),
 		)
 
 	// If we are the initiator of a leased channel, then we have an
@@ -321,7 +320,7 @@ func CommitScriptToRemote(chanType channeldb.ChannelType, initiator bool,
 	// with the sole tap leaf enforcing the 1 CSV delay.
 	case chanType.IsTaproot():
 		toRemoteScriptTree, err := input.NewRemoteCommitScriptTree(
-			remoteKey,
+			remoteKey, input.NoneTapLeaf(),
 		)
 		if err != nil {
 			return nil, 0, err
@@ -427,7 +426,7 @@ func SecondLevelHtlcScript(chanType channeldb.ChannelType, initiator bool,
 	// For taproot channels, the pkScript is a segwit v1 p2tr output.
 	case chanType.IsTaproot():
 		return input.TaprootSecondLevelScriptTree(
-			revocationKey, delayKey, csvDelay,
+			revocationKey, delayKey, csvDelay, input.NoneTapLeaf(),
 		)
 
 	// If we are the initiator of a leased channel, then we have an
@@ -1096,6 +1095,7 @@ func genTaprootHtlcScript(isIncoming, ourCommit bool, timeout uint32,
 		htlcScriptTree, err = input.ReceiverHTLCScriptTaproot(
 			timeout, keyRing.RemoteHtlcKey, keyRing.LocalHtlcKey,
 			keyRing.RevocationKey, rHash[:], ourCommit,
+			input.NoneTapLeaf(),
 		)
 
 	// We're being paid via an HTLC by the remote party, and the HTLC is
@@ -1105,6 +1105,7 @@ func genTaprootHtlcScript(isIncoming, ourCommit bool, timeout uint32,
 		htlcScriptTree, err = input.SenderHTLCScriptTaproot(
 			keyRing.RemoteHtlcKey, keyRing.LocalHtlcKey,
 			keyRing.RevocationKey, rHash[:], ourCommit,
+			input.NoneTapLeaf(),
 		)
 
 	// We're sending an HTLC which is being added to our commitment
@@ -1114,6 +1115,7 @@ func genTaprootHtlcScript(isIncoming, ourCommit bool, timeout uint32,
 		htlcScriptTree, err = input.SenderHTLCScriptTaproot(
 			keyRing.LocalHtlcKey, keyRing.RemoteHtlcKey,
 			keyRing.RevocationKey, rHash[:], ourCommit,
+			input.NoneTapLeaf(),
 		)
 
 	// Finally, we're paying the remote party via an HTLC, which is being
@@ -1123,6 +1125,7 @@ func genTaprootHtlcScript(isIncoming, ourCommit bool, timeout uint32,
 		htlcScriptTree, err = input.ReceiverHTLCScriptTaproot(
 			timeout, keyRing.LocalHtlcKey, keyRing.RemoteHtlcKey,
 			keyRing.RevocationKey, rHash[:], ourCommit,
+			input.NoneTapLeaf(),
 		)
 	}
 
@@ -1136,8 +1139,8 @@ func genTaprootHtlcScript(isIncoming, ourCommit bool, timeout uint32,
 // we need to sign for the remote party (2nd level HTLCs) is also returned
 // along side the multiplexer.
 func genHtlcScript(chanType channeldb.ChannelType, isIncoming, ourCommit bool,
-	timeout uint32, rHash [32]byte, keyRing *CommitmentKeyRing,
-) (input.ScriptDescriptor, error) {
+	timeout uint32, rHash [32]byte,
+	keyRing *CommitmentKeyRing) (input.ScriptDescriptor, error) {
 
 	if !chanType.IsTaproot() {
 		return genSegwitV0HtlcScript(
