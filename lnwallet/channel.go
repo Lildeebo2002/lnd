@@ -2205,8 +2205,8 @@ func createHtlcRetribution(chanState *channeldb.OpenChannel,
 	// then from the PoV of the remote commitment state, they're the
 	// receiver of this HTLC.
 	scriptInfo, err := genHtlcScript(
-		chanState.ChanType, htlc.Incoming, false,
-		htlc.RefundTimeout, htlc.RHash, keyRing,
+		chanState.ChanType, htlc.Incoming.Val, false,
+		htlc.RefundTimeout.Val, htlc.RHash.Val, keyRing,
 	)
 	if err != nil {
 		return emptyRetribution, err
@@ -2219,7 +2219,7 @@ func createHtlcRetribution(chanState *channeldb.OpenChannel,
 		WitnessScript: scriptInfo.WitnessScriptToSign(),
 		Output: &wire.TxOut{
 			PkScript: scriptInfo.PkScript(),
-			Value:    int64(htlc.Amt),
+			Value:    int64(htlc.Amt.Val.Int()),
 		},
 		HashType: sweepSigHash(chanState.ChanType),
 	}
@@ -2252,10 +2252,10 @@ func createHtlcRetribution(chanState *channeldb.OpenChannel,
 		SignDesc: signDesc,
 		OutPoint: wire.OutPoint{
 			Hash:  commitHash,
-			Index: uint32(htlc.OutputIndex),
+			Index: uint32(htlc.OutputIndex.Val),
 		},
 		SecondLevelWitnessScript: secondLevelWitnessScript,
-		IsIncoming:               htlc.Incoming,
+		IsIncoming:               htlc.Incoming.Val,
 		SecondLevelTapTweak:      secondLevelTapTweak,
 	}, nil
 }
@@ -2417,13 +2417,7 @@ func createBreachRetributionLegacy(revokedLog *channeldb.ChannelCommitment,
 			continue
 		}
 
-		entry := &channeldb.HTLCEntry{
-			RHash:         htlc.RHash,
-			RefundTimeout: htlc.RefundTimeout,
-			OutputIndex:   uint16(htlc.OutputIndex),
-			Incoming:      htlc.Incoming,
-			Amt:           htlc.Amt.ToSatoshis(),
-		}
+		entry := channeldb.NewHTLCEntryFromHTLC(htlc)
 		hr, err := createHtlcRetribution(
 			chanState, keyRing, commitHash,
 			commitmentSecret, leaseExpiry, entry,
