@@ -5,8 +5,10 @@ import (
 
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/channeldb/models"
+	"github.com/lightningnetwork/lnd/fn"
 	"github.com/lightningnetwork/lnd/input"
 	"github.com/lightningnetwork/lnd/lnwire"
+	"github.com/lightningnetwork/lnd/tlv"
 )
 
 // updateType is the exact type of an entry within the shared HTLC log.
@@ -221,4 +223,8 @@ type PaymentDescriptor struct {
 	// blinded route (ie, not the introduction node) from update_add_htlc's
 	// TLVs.
 	BlindingPoint lnwire.BlindingPointRecord
+
+	// CustomRecords also stores the set of optional custom records that
+	// may have been attached to a sent HTLC.
+	CustomRecords fn.Option[tlv.Blob]
 }
