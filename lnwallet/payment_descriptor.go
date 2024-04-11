@@ -226,3 +226,27 @@ type PaymentDescriptor struct {
 	// may have been attached to a sent HTLC.
 	CustomRecords lnwire.CustomRecords
 }
+
+// AddHeight returns a pointer to the height at which the HTLC was added to the
+// commitment chain. The height is returned based on the chain the HTLC is
+// being added to (local or remote chain). It is returned as a pointer, which
+// allows the caller to mutate the underlying value if necessary.
+func AddHeight(htlc *PaymentDescriptor, remoteChain bool) *uint64 {
+	if remoteChain {
+		return &htlc.addCommitHeightRemote
+	}
+
+	return &htlc.addCommitHeightLocal
+}
+
+// RemoveHeight returns a pointer to the height at which the HTLC was removed
+// from the commitment chain. The height is returned based on the chain the HTLC
+// is being removed from (local or remote chain). It is returned as a pointer,
+// which allows the caller to mutate the underlying value if necessary.
+func RemoveHeight(htlc *PaymentDescriptor, remoteChain bool) *uint64 {
+	if remoteChain {
+		return &htlc.removeCommitHeightRemote
+	}
+
+	return &htlc.removeCommitHeightLocal
+}
