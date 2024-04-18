@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/lightningnetwork/lnd/channeldb"
+	"github.com/lightningnetwork/lnd/fn"
 	"github.com/lightningnetwork/lnd/input"
 	"github.com/lightningnetwork/lnd/keychain"
 	"github.com/lightningnetwork/lnd/lntypes"
@@ -605,12 +606,15 @@ func (r *ChannelReservation) IsCannedShim() bool {
 }
 
 // ProcessPsbt continues a previously paused funding flow that involves PSBT to
-// construct the funding transaction. This method can be called once the PSBT is
-// finalized and the signed transaction is available.
-func (r *ChannelReservation) ProcessPsbt() error {
+// construct the funding transaction. This method can be called once the PSBT
+// is finalized and the signed transaction is available.
+func (r *ChannelReservation) ProcessPsbt(
+	auxFundingDesc fn.Option[AuxFundingDesc]) error {
+
 	errChan := make(chan error, 1)
 
 	r.wallet.msgChan <- &continueContributionMsg{
+		auxFundingDesc:   auxFundingDesc,
 		pendingFundingID: r.reservationID,
 		err:              errChan,
 	}
@@ -712,8 +716,10 @@ func (r *ChannelReservation) CompleteReservation(fundingInputScripts []*input.Sc
 // available via the .OurSignatures() method. As this method should only be
 // called as a response to a single funder channel, only a commitment signature
 // will be populated.
-func (r *ChannelReservation) CompleteReservationSingle(fundingPoint *wire.OutPoint,
-	commitSig input.Signature) (*channeldb.OpenChannel, error) {
+func (r *ChannelReservation) CompleteReservationSingle(
+	fundingPoint *wire.OutPoint, commitSig input.Signature,
+	auxFundingDesc fn.Option[AuxFundingDesc]) (*channeldb.OpenChannel,
+	error) {
 
 	errChan := make(chan error, 1)
 	completeChan := make(chan *channeldb.OpenChannel, 1)
@@ -723,6 +729,7 @@ func (r *ChannelReservation) CompleteReservationSingle(fundingPoint *wire.OutPoi
 		fundingOutpoint:    fundingPoint,
 		theirCommitmentSig: commitSig,
 		completeChan:       completeChan,
+		auxFundingDesc:     auxFundingDesc,
 		err:                errChan,
 	}
 
@@ -806,6 +813,38 @@ func (r *ChannelReservation) Cancel() error {
 	}
 
 	return <-errChan
+}
+
+// ChanState the current open channel state.
+func (r *ChannelReservation) ChanState() *channeldb.OpenChannel {
+	r.RLock()
+	defer r.RUnlock()
+	return r.partialState
+}
+
+// CommitmentKeyRings returns the local+remote key ring used for the very first
+// commitment transaction both parties.
+func (r *ChannelReservation) CommitmentKeyRings() (*CommitmentKeyRing,
+	*CommitmentKeyRing) {
+
+	r.RLock()
+	defer r.RUnlock()
+
+	chanType := r.partialState.ChanType
+	ourChanCfg := r.ourContribution.ChannelConfig
+	theirChanCfg := r.theirContribution.ChannelConfig
+
+	localKeys := DeriveCommitmentKeys(
+		r.ourContribution.FirstCommitmentPoint, true, chanType,
+		ourChanCfg, theirChanCfg,
+	)
+
+	remoteKeys := DeriveCommitmentKeys(
+		r.theirContribution.FirstCommitmentPoint, false, chanType,
+		ourChanCfg, theirChanCfg,
+	)
+
+	return localKeys, remoteKeys
 }
 
 // VerifyConstraints is a helper function that can be used to check the sanity
