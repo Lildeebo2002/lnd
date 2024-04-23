@@ -262,6 +262,8 @@ type server struct {
 
 	invoices *invoices.InvoiceRegistry
 
+	invoiceHtlcModifier *invoices.HtlcModificationInterceptor
+
 	channelNotifier *channelnotifier.ChannelNotifier
 
 	peerNotifier *peernotifier.PeerNotifier
@@ -559,6 +561,7 @@ func newServer(cfg *Config, listenAddrs []net.Addr,
 		return nil, err
 	}
 
+	invoiceHtlcModifier := invoices.NewHtlcModificationInterceptor()
 	registryConfig := invoices.RegistryConfig{
 		FinalCltvRejectDelta:        lncfg.DefaultFinalCltvRejectDelta,
 		HtlcHoldDuration:            invoices.DefaultHtlcHoldDuration,
@@ -568,6 +571,7 @@ func newServer(cfg *Config, listenAddrs []net.Addr,
 		GcCanceledInvoicesOnStartup: cfg.GcCanceledInvoicesOnStartup,
 		GcCanceledInvoicesOnTheFly:  cfg.GcCanceledInvoicesOnTheFly,
 		KeysendHoldTime:             cfg.KeysendHoldTime,
+		HtlcModifier:                invoiceHtlcModifier,
 	}
 
 	s := &server{
@@ -615,6 +619,8 @@ func newServer(cfg *Config, listenAddrs []net.Addr,
 		outboundPeers:             make(map[string]*peer.Brontide),
 		peerConnectedListeners:    make(map[string][]chan<- lnpeer.Peer),
 		peerDisconnectedListeners: make(map[string][]chan<- struct{}),
+
+		invoiceHtlcModifier: invoiceHtlcModifier,
 
 		customMessageServer: subscribe.NewServer(),
 
@@ -2036,6 +2042,12 @@ func (s *server) Start() error {
 			return
 		}
 		cleanup = cleanup.add(s.interceptableSwitch.Stop)
+
+		if err := s.invoiceHtlcModifier.Start(); err != nil {
+			startErr = err
+			return
+		}
+		cleanup = cleanup.add(s.invoiceHtlcModifier.Stop)
 
 		if err := s.chainArb.Start(); err != nil {
 			startErr = err
