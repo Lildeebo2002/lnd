@@ -9969,7 +9969,7 @@ func TestCreateHtlcRetribution(t *testing.T) {
 	// Create the htlc retribution.
 	hr, err := createHtlcRetribution(
 		aliceChannel.channelState, keyRing, commitHash,
-		dummyPrivate, leaseExpiry, htlc,
+		dummyPrivate, leaseExpiry, htlc, fn.None[CommitAuxLeaves](),
 	)
 	// Expect no error.
 	require.NoError(t, err)
@@ -10175,6 +10175,7 @@ func TestCreateBreachRetribution(t *testing.T) {
 				tc.revocationLog, tx,
 				aliceChannel.channelState, keyRing,
 				dummyPrivate, leaseExpiry,
+				fn.None[CommitAuxLeaves](),
 			)
 
 			// Check the error if expected.
@@ -10414,7 +10415,7 @@ func TestExtractPayDescs(t *testing.T) {
 	// NOTE: we use nil commitment key rings to avoid checking the htlc
 	// scripts(`genHtlcScript`) as it should be tested independently.
 	incomingPDs, outgoingPDs, err := lnChan.extractPayDescs(
-		0, 0, htlcs, nil, nil, true,
+		0, 0, htlcs, nil, nil, true, fn.None[CommitAuxLeaves](),
 	)
 	require.NoError(t, err)
 
