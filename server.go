@@ -1118,8 +1118,10 @@ func newServer(cfg *Config, listenAddrs []net.Addr,
 	})
 
 	s.sweeper = sweep.New(&sweep.UtxoSweeperConfig{
-		FeeEstimator:         cc.FeeEstimator,
-		GenSweepScript:       newSweepPkScriptGen(cc.Wallet, s.cfg.ActiveNetParams.Params),
+		FeeEstimator: cc.FeeEstimator,
+		GenSweepScript: newSweepPkScriptGen(
+			cc.Wallet, s.cfg.ActiveNetParams.Params,
+		),
 		Signer:               cc.Wallet.Cfg.Signer,
 		Wallet:               newSweeperWallet(cc.Wallet),
 		Mempool:              cc.MempoolNotifier,
@@ -1642,8 +1644,7 @@ func newServer(cfg *Config, listenAddrs []net.Addr,
 
 			br, err := lnwallet.NewBreachRetribution(
 				channel, commitHeight, 0, nil,
-				implCfg.AuxLeafStore,
-				implCfg.AuxContractResolver,
+				implCfg.AuxLeafStore, implCfg.AuxSweeper,
 			)
 			if err != nil {
 				return nil, 0, err
