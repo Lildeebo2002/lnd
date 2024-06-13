@@ -284,10 +284,8 @@ func (c *commitSweepResolver) Resolve(_ bool) (ContractResolver, error) {
 	default:
 		isLocalCommitTx = signDesc.WitnessScript[0] == txscript.OP_IF
 	}
-	isDelayedOutput := c.commitResolution.MaturityDelay != 0
 
-	c.log.Debugf("isDelayedOutput=%v, isLocalCommitTx=%v", isDelayedOutput,
-		isLocalCommitTx)
+	isDelayedOutput := c.commitResolution.MaturityDelay != 0
 
 	// There're three types of commitments, those that have tweaks for the
 	// remote key (us in this case), those that don't, and a third where
