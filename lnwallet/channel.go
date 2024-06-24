@@ -1968,6 +1968,10 @@ type HtlcRetribution struct {
 	// this HTLC was offered by us. This flag is used determine the exact
 	// witness type should be used to sweep the output.
 	IsIncoming bool
+
+	// ResolutionBlob is a blob used for aux channels that permits a
+	// spender of this output to claim all funds.
+	ResolutionBlob fn.Option[tlv.Blob]
 }
 
 // BreachRetribution contains all the data necessary to bring a channel
@@ -2038,10 +2042,13 @@ type BreachRetribution struct {
 	// have access to the public keys used in the scripts.
 	KeyRing *CommitmentKeyRing
 
-	// ResolutionBlob is a blob used for aux channels that permits a
-	// spender of the output to properly resolve it in the case of a force
-	// close.
-	ResolutionBlob fn.Option[tlv.Blob]
+	// LocalResolutionBlob is a blob used for aux channels that permits an
+	// honest party to sweep the local commitment output.
+	LocalResolutionBlob fn.Option[tlv.Blob]
+
+	// RemoteResolutionBlob is a blob used for aux channels that permits an
+	// honest party to sweep the remote commitment output.
+	RemoteResolutionBlob fn.Option[tlv.Blob]
 }
 
 // NewBreachRetribution creates a new fully populated BreachRetribution for the
@@ -2239,7 +2246,7 @@ func NewBreachRetribution(chanState *channeldb.OpenChannel, stateNum uint64,
 			return nil, fmt.Errorf("unable to aux resolve: %w", err)
 		}
 
-		br.ResolutionBlob = resolveBlob.Option()
+		br.LocalResolutionBlob = resolveBlob.Option()
 	}
 
 	// Similarly, if their balance exceeds the remote party's dust limit,
@@ -2313,7 +2320,7 @@ func NewBreachRetribution(chanState *channeldb.OpenChannel, stateNum uint64,
 			return nil, fmt.Errorf("unable to aux resolve: %w", err)
 		}
 
-		br.ResolutionBlob = resolveBlob.Option()
+		br.RemoteResolutionBlob = resolveBlob.Option()
 	}
 
 	// Finally, with all the necessary data constructed, we can pad the
