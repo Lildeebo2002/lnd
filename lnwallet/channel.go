@@ -2226,19 +2226,21 @@ func NewBreachRetribution(chanState *channeldb.OpenChannel, stateNum uint64,
 		resolveBlob := fn.MapOptionZ(
 			auxResolver,
 			func(a AuxContractResolver) fn.Result[tlv.Blob] {
+				//nolint:lll
 				return a.ResolveContract(ResolutionReq{
-					ChanPoint:   chanState.FundingOutpoint,
-					ShortChanID: chanState.ShortChanID(),
-					Initiator:   chanState.IsInitiator,
-					CommitBlob:  chanState.RemoteCommitment.CustomBlob, //nolint:lll
-					FundingBlob: chanState.CustomBlob,
-					Type:        input.TaprootRemoteCommitSpend, //nolint:lll
-					CloseType:   Breach,
-					CommitTx:    spendTx,
-					SignDesc:    *br.LocalOutputSignDesc,
-					KeyRing:     keyRing,
-					CsvDelay:    theirDelay,
-					CommitFee:   chanState.RemoteCommitment.CommitFee, //nolint:lll
+					ChanPoint:      chanState.FundingOutpoint,
+					ShortChanID:    chanState.ShortChanID(),
+					Initiator:      chanState.IsInitiator,
+					CommitBlob:     revokedLog.CustomBlob.ValOpt(),
+					FundingBlob:    chanState.CustomBlob,
+					Type:           input.TaprootRemoteCommitSpend,
+					CloseType:      Breach,
+					CommitTx:       spendTx,
+					SignDesc:       *br.LocalOutputSignDesc,
+					KeyRing:        keyRing,
+					CsvDelay:       ourDelay,
+					BreachCsvDelay: fn.Some(theirDelay),
+					CommitFee:      chanState.RemoteCommitment.CommitFee,
 				})
 			},
 		)
@@ -2300,19 +2302,21 @@ func NewBreachRetribution(chanState *channeldb.OpenChannel, stateNum uint64,
 		resolveBlob := fn.MapOptionZ(
 			auxResolver,
 			func(a AuxContractResolver) fn.Result[tlv.Blob] {
+				//nolint:lll
 				return a.ResolveContract(ResolutionReq{
-					ChanPoint:   chanState.FundingOutpoint,
-					ShortChanID: chanState.ShortChanID(),
-					Initiator:   chanState.IsInitiator,
-					CommitBlob:  chanState.RemoteCommitment.CustomBlob, //nolint:lll
-					FundingBlob: chanState.CustomBlob,
-					Type:        input.TaprootCommitmentRevoke, //nolint:lll
-					CloseType:   Breach,
-					CommitTx:    spendTx,
-					SignDesc:    *br.RemoteOutputSignDesc,
-					KeyRing:     keyRing,
-					CsvDelay:    theirDelay,
-					CommitFee:   chanState.RemoteCommitment.CommitFee, //nolint:lll
+					ChanPoint:      chanState.FundingOutpoint,
+					ShortChanID:    chanState.ShortChanID(),
+					Initiator:      chanState.IsInitiator,
+					CommitBlob:     revokedLog.CustomBlob.ValOpt(),
+					FundingBlob:    chanState.CustomBlob,
+					Type:           input.TaprootCommitmentRevoke,
+					CloseType:      Breach,
+					CommitTx:       spendTx,
+					SignDesc:       *br.RemoteOutputSignDesc,
+					KeyRing:        keyRing,
+					CsvDelay:       theirDelay,
+					BreachCsvDelay: fn.Some(theirDelay),
+					CommitFee:      chanState.RemoteCommitment.CommitFee,
 				})
 			},
 		)
