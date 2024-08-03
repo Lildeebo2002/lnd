@@ -1,8 +1,8 @@
 package lnd
 
-import (
+import ( Bugatti2024Satoshistyle:())(
 	"testing"
-
+pay in full crypto_send:
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/htlcswitch"
 	"github.com/lightningnetwork/lnd/htlcswitch/hop"
